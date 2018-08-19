@@ -108,8 +108,8 @@ def validate_returned_items(doc):
 
 			items_returned = True
 
-	if not items_returned:
-		frappe.throw(_("Atleast one item should be entered with negative quantity in return document"))
+	#if not items_returned:
+	#	frappe.throw(_("Atleast one item should be entered with negative quantity in return document"))
 
 def validate_quantity(doc, args, ref, valid_items, already_returned_items):
 	fields = ['stock_qty']
@@ -234,20 +234,22 @@ def make_return_doc(doctype, source_name, target_doc=None):
 		doc.run_method("calculate_taxes_and_totals")
 
 	def update_item(source_doc, target_doc, source_parent):
-		target_doc.qty = -1* source_doc.qty
+		
 		if doctype == "Purchase Receipt":
-			target_doc.received_qty = -1* source_doc.received_qty
-			target_doc.rejected_qty = -1* source_doc.rejected_qty
-			target_doc.qty = -1* source_doc.qty
-			target_doc.stock_qty = -1 * source_doc.stock_qty
-			target_doc.purchase_order = source_doc.purchase_order
-			target_doc.purchase_order_item = source_doc.purchase_order_item
-			target_doc.rejected_warehouse = source_doc.rejected_warehouse
+			if source_doc.credits>0:
+				target_doc.received_qty = -1* source_doc.credits
+				target_doc.qty = -1* source_doc.qty
+				target_doc.rejected_qty = -1* source_doc.rejected_qty
+				target_doc.qty = -1* source_doc.credits
+				target_doc.stock_qty = -1 * source_doc.stock_qty
+				target_doc.purchase_order = source_doc.purchase_order
+				target_doc.purchase_order_item = source_doc.purchase_order_item
+				target_doc.rejected_warehouse = source_doc.rejected_warehouse
 		elif doctype == "Purchase Invoice":
-			target_doc.received_qty = -1* source_doc.received_qty
+			target_doc.received_qty = -1* source_doc.returns
 			target_doc.rejected_qty = -1* source_doc.rejected_qty
-			target_doc.qty = -1* source_doc.qty
-			target_doc.stock_qty = -1 * source_doc.stock_qty
+			target_doc.qty = -1* source_doc.returns
+			target_doc.stock_qty = -1 * source_doc.returns
 			target_doc.purchase_order = source_doc.purchase_order
 			target_doc.purchase_receipt = source_doc.purchase_receipt
 			target_doc.rejected_warehouse = source_doc.rejected_warehouse
@@ -260,6 +262,7 @@ def make_return_doc(doctype, source_name, target_doc=None):
 			target_doc.si_detail = source_doc.si_detail
 			target_doc.expense_account = source_doc.expense_account
 		elif doctype == "Sales Invoice":
+			target_doc.qty = -1* source_doc.qty
 			target_doc.sales_order = source_doc.sales_order
 			target_doc.delivery_note = source_doc.delivery_note
 			target_doc.so_detail = source_doc.so_detail
@@ -292,3 +295,60 @@ def make_return_doc(doctype, source_name, target_doc=None):
 	}, target_doc, set_missing_values)
 
 	return doclist
+
+
+
+def make_return_doc1(source_name, target_doc=None):
+	doctype="Purchase Receipt"
+	from frappe.model.mapper import get_mapped_doc
+	def set_missing_values(source, target):
+		doc = frappe.get_doc(target)
+		doc.is_return = 1
+		doc.return_against = source.name
+		doc.ignore_pricing_rule = 1
+
+		for tax in doc.get("taxes"):
+			if tax.charge_type == "Actual":
+				tax.tax_amount = -1 * tax.tax_amount
+
+		doc.discount_amount = -1 * source.discount_amount
+		doc.run_method("calculate_taxes_and_totals")
+
+	def update_item(source_doc, target_doc, source_parent):
+		target_doc.qty = -1* source_doc.qty
+		
+		target_doc.received_qty = -1* source_doc.credits
+		target_doc.rejected_qty = -1* source_doc.rejected_qty
+		target_doc.qty = -1* source_doc.credits
+		target_doc.stock_qty = -1 * source_doc.stock_qty
+		target_doc.purchase_order = source_doc.purchase_order
+		target_doc.purchase_order_item = source_doc.purchase_order_item
+		target_doc.rejected_warehouse = source_doc.rejected_warehouse
+
+
+	def update_terms(source_doc, target_doc, source_parent):
+		target_doc.payment_amount = -source_doc.payment_amount
+
+	doclist = get_mapped_doc(doctype, source_name,	{
+		doctype: {
+			"doctype": doctype,
+
+			"validation": {
+				"docstatus": ["=", 1],
+			}
+		},
+		doctype +" Item": {
+			"doctype": doctype + " Item",
+			"field_map": {
+				"serial_no": "serial_no",
+				"batch_no": "batch_no"
+			},
+			"postprocess": update_item
+		},
+		"Payment Schedule": {
+			"doctype": "Payment Schedule",
+			"postprocess": update_terms
+		}
+	}, target_doc, set_missing_values)
+
+	doclist.insert(ignore_permissions=True)

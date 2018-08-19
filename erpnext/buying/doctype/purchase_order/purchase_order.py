@@ -45,7 +45,7 @@ class PurchaseOrder(BuyingController):
 		self.set_status()
 
 		self.validate_supplier()
-		self.validate_schedule_date()
+		# self.validate_schedule_date()
 		validate_for_items(self)
 		self.check_for_closed_status()
 
@@ -325,10 +325,28 @@ def set_missing_values(source, target):
 @frappe.whitelist()
 def make_purchase_receipt(source_name, target_doc=None):
 	def update_item(obj, target, source_parent):
-		target.qty = flt(obj.qty) - flt(obj.received_qty)
-		target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
-		target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
-		target.base_amount = (flt(obj.qty) - flt(obj.received_qty)) * \
+		if obj.boxes_pallet_for_purchase==None:
+			boxes_pallet_for_purchase=1
+		elif obj.boxes_pallet_for_purchase==0:
+			boxes_pallet_for_purchase=1
+		else:
+			boxes_pallet_for_purchase=obj.boxes_pallet_for_purchase
+
+		target.pallets_ordered = flt(obj.box)/flt(boxes_pallet_for_purchase)
+		target.boxes_ordered = flt(obj.box)
+		target.received_boxed=flt(obj.box)
+		if obj.uom=="Pallet":
+			target.received_qty = flt(obj.box)/flt(boxes_pallet_for_purchase)
+		else:
+			target.received_qty = flt(obj.box)
+		target.box_rate=flt(obj.box_unit_rate)
+		if obj.uom=="Pallet":
+			target.qty =flt(obj.box)/flt(obj.boxes_pallet_for_purchase)
+		else:
+			target.qty =flt(obj.box)
+		target.stock_qty = (flt(obj.box) - flt(obj.received_qty)) * flt(obj.conversion_factor)
+		target.amount = (flt(obj.box) - flt(obj.received_qty)) * flt(obj.rate)
+		target.base_amount = (flt(obj.box) - flt(obj.received_qty)) * \
 			flt(obj.rate) * flt(source_parent.conversion_rate)
 
 	doc = get_mapped_doc("Purchase Order", source_name,	{
@@ -346,7 +364,8 @@ def make_purchase_receipt(source_name, target_doc=None):
 			"field_map": {
 				"name": "purchase_order_item",
 				"parent": "purchase_order",
-				"bom": "bom"
+				"bom": "bom",
+				"box_rate":"box_unit_rate"
 			},
 			"postprocess": update_item,
 			"condition": lambda doc: abs(doc.received_qty) < abs(doc.qty) and doc.delivered_by_supplier!=1
@@ -367,9 +386,16 @@ def make_purchase_invoice(source_name, target_doc=None):
 		target.set_advances()
 
 	def update_item(obj, target, source_parent):
-		target.amount = flt(obj.amount) - flt(obj.billed_amt)
-		target.base_amount = target.amount * flt(source_parent.conversion_rate)
-		target.qty = target.amount / flt(obj.rate) if (flt(obj.rate) and flt(obj.billed_amt)) else flt(obj.qty)
+		target.pallets_ordered = flt(obj.box)/flt(obj.boxes_pallet_for_purchase)
+		target.boxes_ordered = flt(obj.box)
+		target.received_box = flt(obj.box)
+		target.received_qty=flt(obj.box)
+		target.qty = obj.qty
+		target.box_rate=obj.box_unit_rate
+		target.stock_qty = (flt(obj.box) - flt(obj.received_qty)) * flt(obj.conversion_factor)
+		target.amount = (flt(obj.box) - flt(obj.received_qty)) * flt(obj.rate)
+		target.base_amount = (flt(obj.box) - flt(obj.received_qty)) * \
+			flt(obj.rate) * flt(source_parent.conversion_rate)
 
 		item = frappe.db.get_value("Item", target.item_code, ["item_group", "buying_cost_center"], as_dict=1)
 		target.cost_center = frappe.db.get_value("Project", obj.project, "cost_center") \
@@ -391,6 +417,8 @@ def make_purchase_invoice(source_name, target_doc=None):
 			"field_map": {
 				"name": "po_detail",
 				"parent": "purchase_order",
+				"received_box":"box",
+				"received_qty":"box",
 			},
 			"postprocess": update_item,
 			"condition": lambda doc: (doc.base_amount==0 or abs(doc.billed_amt) < abs(doc.amount))

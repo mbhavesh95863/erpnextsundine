@@ -43,9 +43,9 @@ class StockLedgerEntry(Document):
 				where warehouse=%s and item_code=%s and batch_no=%s""",
 				(self.warehouse, self.item_code, self.batch_no))[0][0])
 
-			if batch_bal_after_transaction < 0:
-				frappe.throw(_("Stock balance in Batch {0} will become negative {1} for Item {2} at Warehouse {3}")
-					.format(self.batch_no, batch_bal_after_transaction, self.item_code, self.warehouse))
+			#if batch_bal_after_transaction < 0:
+			#	frappe.throw(_("Stock balance in Batch {0} will become negative {1} for Item {2} at Warehouse {3}")
+			#		.format(self.batch_no, batch_bal_after_transaction, self.item_code, self.warehouse))
 
 	def validate_mandatory(self):
 		mandatory = ['warehouse','posting_date','voucher_type','voucher_no','company']

@@ -37,9 +37,10 @@ frappe.ui.form.on("Purchase Order", {
 			frm.toggle_display('get_last_purchase_rate',
 				frm.doc.__onload.disable_fetch_last_purchase_rate);
 		}
-	},
-});
+	}
 
+});
+var gvar=0;
 frappe.ui.form.on("Purchase Order Item", {
 	schedule_date: function(frm, cdt, cdn) {
 		var row = locals[cdt][cdn];
@@ -50,8 +51,241 @@ frappe.ui.form.on("Purchase Order Item", {
 				set_schedule_date(frm);
 			}
 		}
+	},
+	qty: function(frm, cdt, cdn) {
+		var row = locals[cdt][cdn];
+		gvar=row.qty;
+		if(row.uom == 'Box'){
+			frappe.model.set_value(cdt, cdn, "box", Math.round(row.qty));
+		} else if(row.uom == 'Pallet'){
+			frappe.model.set_value(cdt, cdn, "box", Math.round(row.qty*row.boxes_pallet_for_purchase));
+		}
+		frm.refresh_field('items');
+		var total_boxes = 0;
+		var total_pallet = 0;
+		var total_gross_weight_lbs = 0;
+		$.each(frm.doc.items || [], function(i, d) {
+						if(d.box) {
+							total_boxes += flt(d.box);
+							total_gross_weight_lbs += flt(d.box * d.gross_weight_lbs);
+						}
+					});
+					$.each(frm.doc.items || [], function(i,j) {
+						if(j.qty) {
+							if(j.boxes_pallet_for_purchase > 0) {
+								total_pallet += flt(j.box)/flt(j.boxes_pallet_for_purchase);
+							}
+						}
+					});
+		frm.set_value("total_pallet", total_pallet.toFixed(2));
+		refresh_field("total_pallet");
+		frm.set_value("total_boxes", total_boxes.toFixed(2));
+		frm.set_value("total_gross_weight_lbs", total_gross_weight_lbs.toFixed(2));
+		frm.set_value("total_weight_kg", (total_gross_weight_lbs * 0.45359237).toFixed(2));
+		frm.refresh_field('total_boxes');
+		frm.refresh_field('total_gross_weight_lbs');
+		frm.refresh_field('total_weight_kg');
+	},
+	price_list_rate:function(frm,cdt,cdn){
+			var row=locals[cdt][cdn]
+			console.log(row.rate)
+	},
+	rate:function(frm,cdt,cdn){
+		var row = locals[cdt][cdn];
+			frappe.call({
+				method: 'frappe.client.get_value',
+				args: {
+					doctype: 'Item',
+					filters: { item_code: row.item_code
+					},
+				   fieldname:['purchase_uom','gross_weight']
+				},
+				callback: function(res) {
+					
+					
+					if(res.message.purchase_uom === 'Pallet')
+					{
+						frappe.model.set_value(cdt, cdn, "box_unit_rate",row.rate/row.boxes_pallet_for_purchase);
+						frm.refresh_field('box_unit_rate');
+
+					}
+					else 
+					{
+						frappe.model.set_value(cdt, cdn, "box_unit_rate",row.rate);
+						frm.refresh_field('box_unit_rate');
+					}
+					frm.refresh_field('items');
+				}
+			})
+
+	},
+	box_unit_rate:function(frm,cdt,cdn){
+				var row=locals[cdt][cdn]
+			frappe.call({
+				method: 'frappe.client.get_value',
+				args: {
+					doctype: 'Item',
+					filters: { item_code: row.item_code
+					},
+				   fieldname:['purchase_uom','gross_weight']
+				},
+				callback: function(res) {
+					
+					
+					if(res.message.purchase_uom === 'Pallet')
+					{
+						frappe.model.set_value(cdt, cdn, "rate",row.box_unit_rate*row.boxes_pallet_for_purchase);
+						frm.refresh_field('rate');
+
+					}
+					else 
+					{
+						frappe.model.set_value(cdt, cdn, "rate",row.box_unit_rate);
+						frm.refresh_field('rate');
+					}
+					frm.refresh_field('items');
+				}
+			})
+
+	},
+	item_code: function(frm, cdt, cdn) {
+
+		//setTimeout(function () {
+			var row = locals[cdt][cdn];
+			frappe.model.set_value(d1.doctype,d1.name,"qty",gvar);
+			var qty = row.qty;
+			var rate=row.rate
+			gvar = row.qty;
+			
+			frappe.call({
+				method: 'frappe.client.get_value',
+				args: {
+					doctype: 'Item',
+					filters: { item_code: row.item_code
+					},
+				   fieldname:['purchase_uom','gross_weight']
+				},
+				callback: function(res) {
+					
+					frappe.model.set_value(cdt, cdn, "gross_weight_lbs", res.message.gross_weight);
+					
+					if(res.message.purchase_uom === 'Pallet')
+					{
+						frappe.model.set_value(cdt,cdn,"rate",rate);
+						frappe.model.set_value(cdt, cdn, "box", qty * row.boxes_pallet_for_purchase);
+						frappe.model.set_value(cdt, cdn, "box_unit_rate",rate/row.boxes_pallet_for_purchase);
+						console.log(rate)
+						console.log("if")
+						frm.refresh_field('box_unit_rate');
+
+					}
+					else 
+					{
+						frappe.model.set_value(cdt, cdn, "box", qty);
+						frappe.model.set_value(cdt, cdn, "box_unit_rate",rate);
+						console.log("else");
+						frm.refresh_field('box_unit_rate');
+					}
+					frm.refresh_field('items');
+				}
+			});
+			var total_boxes = 0;
+			var total_pallet = 0;
+			var total_gross_weight_lbs = 0;
+			
+			frm.doc.items.forEach(function(f) { 
+				total_boxes += flt(f.box); 
+				if(f.boxes_pallet_for_purchase > 0) 
+				{
+					total_pallet += flt(f.box)/flt(f.boxes_pallet_for_purchase);
+				}
+				total_gross_weight_lbs += flt(f.box) * flt(f.gross_weight_lbs); 
+			});
+			frm.set_value("total_boxes", total_boxes.toFixed(2));
+			refresh_field("total_boxes");
+			
+			frm.set_value("total_pallet", total_pallet.toFixed(2));
+			refresh_field("total_pallet");
+			
+			frm.set_value("total_gross_weight_lbs", total_gross_weight_lbs.toFixed(2));
+			refresh_field("total_gross_weight_lbs");
+	
+			frm.set_value("total_weight_kg", (total_gross_weight_lbs * 0.45359237).toFixed(2));
+			frm.refresh_field('total_weight_kg');
+			
+	},
+	box: function(frm, cdt, cdn) 
+	{
+		var row = locals[cdt][cdn];
+		var box = row.box;
+		console.log(row.rate);
+		if(box <= 0) { box = 1; }
+		frappe.model.set_value(cdt, cdn, "box", box);
+		if(row.uom === 'Pallet')
+		{
+			frappe.model.set_value(cdt, cdn, "qty", (box / row.boxes_pallet_for_purchase).toFixed(2));
+		}
+		else 
+		{
+			frappe.model.set_value(cdt, cdn, "qty", box.toFixed(2));
+		}
+		frm.refresh_field('items');
+		var total_boxes = 0;
+		var total_pallet = 0;
+		var total_gross_weight_lbs = 0;
+		$.each(frm.doc.items || [], function(i, d) {
+						if(d.box) {
+							total_boxes += flt(d.box);
+							total_gross_weight_lbs += flt(d.box * d.gross_weight_lbs);
+						}
+					});
+					$.each(frm.doc.items || [], function(i,j) {
+						if(j.qty) {
+							if(j.boxes_pallet_for_purchase > 0) {
+								total_pallet += flt(j.box)/flt(j.boxes_pallet_for_purchase);
+							}
+						}
+					});
+		frm.set_value("total_boxes", total_boxes.toFixed(2));
+		frm.set_value("total_pallet", total_pallet.toFixed(2));
+		frm.set_value("total_gross_weight_lbs", total_gross_weight_lbs.toFixed(2));
+		frm.set_value("total_weight_kg", (total_gross_weight_lbs * 0.45359237).toFixed(2));
+		frm.refresh_field('total_boxes');
+		frm.refresh_field('total_pallet');
+		frm.refresh_field('total_gross_weight_lbs');
+		frm.refresh_field('total_weight_kg');
 	}
 });
+
+
+frappe.ui.form.on("Purchase Order Item", "items_remove", function(frm, cdt, cdn) {
+    // code for calculate total and set on parent field.
+		var total_boxes = 0;
+		var total_pallet = 0;
+		var total_gross_weight_lbs = 0;
+		$.each(frm.doc.items || [], function(i, d) {
+						if(d.box) {
+							total_boxes += flt(d.box);
+							total_gross_weight_lbs += flt(d.box * d.gross_weight_lbs);
+						}
+					});
+					$.each(frm.doc.items || [], function(i,j) {
+						if(j.qty) {
+							if(j.boxes_pallet_for_purchase > 0) {
+								total_pallet += flt(j.box)/flt(j.boxes_pallet_for_purchase);
+							}
+						}
+					});
+		frm.set_value("total_boxes", total_boxes.toFixed(2));
+		frm.set_value("total_pallet", total_pallet.toFixed(2));
+		frm.set_value("total_gross_weight_lbs", total_gross_weight_lbs.toFixed(2));
+		frm.set_value("total_weight_kg", (total_gross_weight_lbs * 0.45359237).toFixed(2));
+		frm.refresh_field('total_boxes');
+		frm.refresh_field('total_pallet');
+		frm.refresh_field('total_gross_weight_lbs');
+		frm.refresh_field('total_weight_kg');
+});
+
 
 erpnext.buying.PurchaseOrderController = erpnext.buying.BuyingController.extend({
 	refresh: function(doc, cdt, cdn) {

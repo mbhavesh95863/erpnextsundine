@@ -8,6 +8,7 @@ from frappe.utils import flt, cint, nowdate
 
 from frappe import throw, _
 import frappe.defaults
+import json
 from frappe.utils import getdate
 from erpnext.controllers.buying_controller import BuyingController
 from erpnext.accounts.utils import get_account_currency
@@ -374,6 +375,7 @@ def make_purchase_invoice(source_name, target_doc=None):
 
 	def update_item(source_doc, target_doc, source_parent):
 		target_doc.qty = source_doc.qty - invoiced_qty_map.get(source_doc.name, 0)
+		target_doc.received_box=flt(source_doc.received_boxed)
 
 	doclist = get_mapped_doc("Purchase Receipt", source_name,	{
 		"Purchase Receipt": {
@@ -389,6 +391,8 @@ def make_purchase_invoice(source_name, target_doc=None):
 				"parent": "purchase_receipt",
 				"purchase_order_item": "po_detail",
 				"purchase_order": "purchase_order",
+				"received_box":"received_qty",
+				"box_rate":"box_rate"
 			},
 			"postprocess": update_item,
 			"filter": lambda d: abs(d.qty) - abs(invoiced_qty_map.get(d.name, 0))<=0
@@ -416,7 +420,30 @@ def get_invoiced_qty_map(purchase_receipt):
 @frappe.whitelist()
 def make_purchase_return(source_name, target_doc=None):
 	from erpnext.controllers.sales_and_purchase_return import make_return_doc
-	return make_return_doc("Purchase Receipt", source_name, target_doc)
+	doc=make_return_doc("Purchase Receipt", source_name, target_doc)
+	#frappe.msgprint(json.dumps(doc))]
+	response=[]
+	for row in doc.items:
+		if row.credits>0:
+			response.append(row)
+	doc.items=[]
+	if len(response)>0:
+		doc1=doc.insert()
+		doc1.items=response
+		doc1.submit()
+		
+	#item_length=len(doc1.items)
+	#count=0
+	#for row in doc1.items:
+	#	if not row.credits>0:
+	#		frappe.delete_doc(frappe.get_doc('Purchase Receipt Item',row.name))
+	#		count=count+1
+	#if count==item_lenght:
+	#	frappe.delete_doc(frappe.get_doc('Purchase Receipt',doc1.name))
+	#else:
+	#	result=frappe.get_doc("Purchase Receipt",doc1.name)
+	#	result.submit()
+		
 
 
 @frappe.whitelist()

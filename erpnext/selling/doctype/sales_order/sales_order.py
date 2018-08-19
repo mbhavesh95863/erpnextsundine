@@ -380,6 +380,13 @@ class SalesOrder(SellingController):
 			d.set("delivery_date", get_next_schedule_date(reference_delivery_date,
 				subscription_doc.frequency, cint(subscription_doc.repeat_on_day)))
 
+	def get_item_weight_per_unit(self,item):
+		weight_per_unit = frappe.db.sql("select weight_per_unit from `tabItem` where name='{0}'".format(item))
+		if weight_per_unit:
+			return weight_per_unit[0][0]
+
+
+
 def get_list_context(context=None):
 	from erpnext.controllers.website_list_for_contact import get_list_context
 	list_context = get_list_context(context)
@@ -492,6 +499,7 @@ def make_delivery_note(source_name, target_doc=None):
 		target.base_amount = (flt(source.qty) - flt(source.delivered_qty)) * flt(source.base_rate)
 		target.amount = (flt(source.qty) - flt(source.delivered_qty)) * flt(source.rate)
 		target.qty = flt(source.qty) - flt(source.delivered_qty)
+		target.ordered_qty = flt(source.qty) - flt(source.delivered_qty)
 
 		item = frappe.db.get_value("Item", target.item_code, ["item_group", "selling_cost_center"], as_dict=1)
 

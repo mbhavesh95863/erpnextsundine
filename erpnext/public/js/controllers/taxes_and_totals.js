@@ -25,6 +25,7 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 		this.discount_amount_applied = false;
 		this._calculate_taxes_and_totals();
 		this.calculate_discount_amount();
+		
 
 		// Advance calculation applicable to Sales /Purchase Invoice
 		if(in_list(["Sales Invoice", "Purchase Invoice"], this.frm.doc.doctype)
@@ -89,7 +90,37 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 			$.each(this.frm.doc["items"] || [], function(i, item) {
 				frappe.model.round_floats_in(item);
 				item.net_rate = item.rate;
-				item.amount = flt(item.rate * item.qty, precision("amount", item));
+				if(item.doctype=="Purchase Order Item")
+					{
+
+						item.amount = flt(item.box_unit_rate * item.box, precision("amount", item));
+						if(isNaN(item.amount))
+							{
+								item.amount=flt(0)
+							}
+					}
+				
+				else if(item.doctype=="Purchase Invoice Item")
+					{
+				
+						if(parseInt(item.credits)>0)
+						{
+							item.amount = flt(item.box_rate * (flt(item.received_box)-flt(item.credits)), precision("amount", item));
+						}
+						else
+						{
+
+						item.amount = flt(item.box_rate * item.received_box, precision("amount", item));
+						if(isNaN(item.amount))
+							{
+								item.amount=flt(0)
+							}
+						}
+					}
+					else{
+						item.amount = flt(item.rate * item.qty, precision("amount", item));
+					}
+				
 				item.net_amount = item.amount;
 				item.item_tax_amount = 0.0;
 				item.total_weight = flt(item.weight_per_unit * item.stock_qty);
@@ -200,17 +231,33 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 
 	calculate_net_total: function() {
 		var me = this;
-		this.frm.doc.total = this.frm.doc.base_total = this.frm.doc.net_total = this.frm.doc.base_net_total = 0.0;
+		this.frm.doc.total = this.frm.doc.base_total = this.frm.doc.credit_total_amt = this.frm.doc.net_total = this.frm.doc.base_net_total = this.frm.doc.credit_total=this.frm.doc.sub_total= 0.0;
 
 		$.each(this.frm.doc["items"] || [], function(i, item) {
 			me.frm.doc.total += item.amount;
 			me.frm.doc.base_total += item.base_amount;
 			me.frm.doc.net_total += item.net_amount;
 			me.frm.doc.base_net_total += item.base_net_amount;
+			if(me.frm.doc.doctype=="Purchase Receipt")
+			{
+				me.frm.doc.credit_total += item.credits
+				me.frm.doc.sub_total += item.base_amount
+				me.frm.doc.credit_total_amt += parseFloat(item.credits)*item.box_unit_rate
+				
+				console.log(me.frm.doc.credit_total)
+			}
 			});
 
 
 		frappe.model.round_floats_in(this.frm.doc, ["total", "base_total", "net_total", "base_net_total"]);
+			if(me.frm.doc.doctype=="Purchase Receipt")
+			{
+				me.frm.doc.base_total=me.frm.doc.base_total-me.frm.doc.credit_total_amt
+				
+				console.log(me.frm.doc.base_net_total)
+				frappe.model.round_floats_in(this.frm.doc, ["credit_total","sub_total","base_net_total","credit_total_amt"]);
+			}
+		
 	},
 
 	calculate_taxes: function() {

@@ -57,11 +57,31 @@ frappe.ui.form.on("Sales Order Item", {
 			frm.script_manager.copy_from_first_row("items", row, ["delivery_date"]);
 		}
 	},
+	
 	delivery_date: function(frm, cdt, cdn) {
 		if(!frm.doc.delivery_date) {
 			erpnext.utils.copy_value_in_all_row(frm.doc, cdt, cdn, "items", "delivery_date");
 		}
+	},
+	weight_lbs: function(frm, cdt, cdn) {
+		var row = locals[cdt][cdn];
+		if(row.item_code){
+			frappe.call({
+	            "method": "get_item_weight_per_unit",
+	            doc: cur_frm.doc,
+	            args: {
+					item: row.item_code
+				},
+	            callback: function(r) {
+	            	if(r.message){
+	            		var qty = row.weight_lbs/r.message
+	            		frappe.model.set_value(cdt, cdn, "qty", qty);
+	            	}
+	            }
+	        });
+	    }
 	}
+
 });
 
 erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend({
@@ -104,60 +124,60 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 
 				// delivery note
 				if(flt(doc.per_delivered, 6) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1 && allow_delivery) {
-					this.frm.add_custom_button(__('Delivery'),
+					this.frm.add_custom_button(__('Delivery/Invoice'),
 						function() { me.make_delivery_note_based_on_delivery_date(); }, __("Make"));
-					this.frm.add_custom_button(__('Production Order'),
-						function() { me.make_production_order() }, __("Make"));
+		/*			this.frm.add_custom_button(__('Production Order'),
+						function() { me.make_production_order() }, __("Make"));*/
 
 					this.frm.page.set_inner_btn_group_as_primary(__("Make"));
 				}
 
 				// sales invoice
-				if(flt(doc.per_billed, 6) < 100) {
+/*				if(flt(doc.per_billed, 6) < 100) {
 					this.frm.add_custom_button(__('Invoice'),
 						function() { me.make_sales_invoice() }, __("Make"));
-				}
+				}*/
 
 				// material request
 				if(!doc.order_type || ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1
 					&& flt(doc.per_delivered, 6) < 100) {
-					this.frm.add_custom_button(__('Material Request'),
-						function() { me.make_material_request() }, __("Make"));
+			/*		this.frm.add_custom_button(__('Material Request'),
+						function() { me.make_material_request() }, __("Make"));*/
 				}
 
 				// make purchase order
 				if(flt(doc.per_delivered, 6) < 100 && allow_purchase) {
-					this.frm.add_custom_button(__('Purchase Order'),
-						function() { me.make_purchase_order() }, __("Make"));
+			/*		this.frm.add_custom_button(__('Purchase Order'),
+						function() { me.make_purchase_order() }, __("Make"));*/
 				}
 
 				// payment request
 				if(flt(doc.per_billed)==0) {
-					this.frm.add_custom_button(__('Payment Request'),
+/*					this.frm.add_custom_button(__('Payment Request'),
 						function() { me.make_payment_request() }, __("Make"));
 					this.frm.add_custom_button(__('Payment'),
-						function() { me.make_payment_entry() }, __("Make"));
+						function() { me.make_payment_entry() }, __("Make"));*/
 				}
 
 				// maintenance
 				if(flt(doc.per_delivered, 2) < 100 &&
 						["Sales", "Shopping Cart"].indexOf(doc.order_type)===-1) {
-					this.frm.add_custom_button(__('Maintenance Visit'),
+	/*				this.frm.add_custom_button(__('Maintenance Visit'),
 						function() { me.make_maintenance_visit() }, __("Make"));
 					this.frm.add_custom_button(__('Maintenance Schedule'),
-						function() { me.make_maintenance_schedule() }, __("Make"));
+						function() { me.make_maintenance_schedule() }, __("Make"));*/
 				}
 
 				// project
 				if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1 && allow_delivery) {
-						this.frm.add_custom_button(__('Project'),
-							function() { me.make_project() }, __("Make"));
+						/*this.frm.add_custom_button(__('Project'),
+							function() { me.make_project() }, __("Make"));*/
 				}
 
 				if(!doc.subscription) {
-					this.frm.add_custom_button(__('Subscription'), function() {
+					/*this.frm.add_custom_button(__('Subscription'), function() {
 						erpnext.utils.make_subscription(doc.doctype, doc.name)
-					}, __("Make"))
+					}, __("Make"))*/
 				}
 
 			} else {

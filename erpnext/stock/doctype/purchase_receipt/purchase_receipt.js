@@ -51,6 +51,10 @@ frappe.ui.form.on("Purchase Receipt", {
 	},
 });
 
+
+
+
+
 erpnext.stock.PurchaseReceiptController = erpnext.buying.BuyingController.extend({
 	setup: function(doc) {
 		this.setup_posting_date_time_check();
@@ -93,7 +97,7 @@ erpnext.stock.PurchaseReceiptController = erpnext.buying.BuyingController.extend
 					cur_frm.add_custom_button(__("Close"), this.close_purchase_receipt, __("Status"))
 				}
 
-				cur_frm.add_custom_button(__('Return'), this.make_purchase_return, __("Make"));
+				
 
 				if(flt(this.frm.doc.per_billed) < 100) {
 					cur_frm.add_custom_button(__('Invoice'), this.make_purchase_invoice, __("Make"));

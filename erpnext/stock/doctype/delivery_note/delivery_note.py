@@ -97,7 +97,7 @@ class DeliveryNote(SellingController):
 					frappe.throw(_("Sales Order required for Item {0}").format(d.item_code))
 
 	def validate(self):
-		self.validate_posting_time()
+		# self.validate_posting_time()
 		super(DeliveryNote, self).validate()
 		self.set_status()
 		self.so_required()
@@ -230,7 +230,7 @@ class DeliveryNote(SellingController):
 
 		self.cancel_packing_slips()
 
-		self.make_gl_entries_on_cancel()
+		# self.make_gl_entries_on_cancel()
 
 	def check_credit_limit(self):
 		from erpnext.selling.doctype.customer.customer import check_credit_limit
@@ -386,6 +386,7 @@ def make_sales_invoice(source_name, target_doc=None):
 
 	def set_missing_values(source, target):
 		target.is_pos = 0
+		target.update_stock=0
 		target.ignore_pricing_rule = 1
 		target.run_method("set_missing_values")
 		target.run_method("set_po_nos")
@@ -440,6 +441,69 @@ def make_sales_invoice(source_name, target_doc=None):
 	}, target_doc, set_missing_values)
 
 	return doc
+
+@frappe.whitelist()
+def make_sales_invoice1(source_name, target_doc=None):
+	invoiced_qty_map = get_invoiced_qty_map(source_name)
+	
+
+	def set_missing_values(source, target):
+		target.is_pos = 0
+		target.update_stock=0
+		target.delivery_note_name=source.name
+		target.ignore_pricing_rule = 1
+		target.run_method("set_missing_values")
+		target.run_method("set_po_nos")
+
+		if len(target.get("items")) == 0:
+			frappe.throw(_("All these items have already been invoiced"))
+
+		target.run_method("calculate_taxes_and_totals")
+
+		# set company address
+		target.update(get_company_address(target.company))
+		if target.company_address:
+			target.update(get_fetch_values("Sales Invoice", 'company_address', target.company_address))	
+
+	def update_item(source_doc, target_doc, source_parent):
+		target_doc.qty = source_doc.qty - invoiced_qty_map.get(source_doc.name, 0)
+		if source_doc.serial_no and source_parent.per_billed > 0:
+			target_doc.serial_no = get_delivery_note_serial_no(source_doc.item_code,
+				target_doc.qty, source_parent.name)
+
+	doc = get_mapped_doc("Delivery Note", source_name, 	{
+		"Delivery Note": {
+			"doctype": "Sales Invoice",
+			"validation": {
+				"docstatus": ["=", 1]
+			}
+		},
+		"Delivery Note Item": {
+			"doctype": "Sales Invoice Item",
+			"field_map": {
+				"name": "dn_detail",
+				"parent": "delivery_note",
+				"so_detail": "so_detail",
+				"against_sales_order": "sales_order",
+				"serial_no": "serial_no",
+				"cost_center": "cost_center"
+			},
+			"postprocess": update_item,
+			"filter": lambda d: abs(d.qty) - abs(invoiced_qty_map.get(d.name, 0))<=0
+		},
+		"Sales Taxes and Charges": {
+			"doctype": "Sales Taxes and Charges",
+			"add_if_empty": True
+		},
+		"Sales Team": {
+			"doctype": "Sales Team",
+			"field_map": {
+				"incentives": "incentives"
+			},
+			"add_if_empty": True
+		}
+	}, target_doc, set_missing_values)
+	doc.submit()
 
 @frappe.whitelist()
 def make_installation_note(source_name, target_doc=None):

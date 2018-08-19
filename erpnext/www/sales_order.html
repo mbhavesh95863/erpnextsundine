@@ -1,0 +1,243 @@
+{% extends "templates/web.html" %}
+{% block style %}
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+{% endblock %}
+{% block page_content %}
+<script>
+frappe.ready(function() {
+        var city_name = frappe.utils.get_url_arg("city_name");
+        var delivery_date = frappe.utils.get_url_arg("delivery_date");
+        var limit = frappe.utils.get_url_arg("limit");
+        var status = frappe.utils.get_url_arg("status");
+	var vehicle_number = frappe.utils.get_url_arg("vehicle_number");
+        $(".city_name").val(city_name);
+        $(".delivery_date").val(delivery_date);
+	$(".vehicle_number").val(vehicle_number);
+        if(city_name || delivery_date || status || vehicle_number) {
+        $(".search-results").html("{{ _('Search results for') }}: <font size='2'>" + decodeURIComponent('<b>City:</b> ' +city_name +',<b> Delivery Date </b> '+ delivery_date +' ,<b> Status:</b> '+ status +',<b> Vehicle Number:</b> ' + vehicle_number ) + '</font>');
+        }
+        window.city_name = city_name;
+        window.delivery_date = delivery_date;
+        window.start = 0;
+	window.vehicle_number = vehicle_number;
+        if(limit) {
+                window.limit = limit;
+        }
+        else {
+                 window.limit = 50;
+        }
+        if(status) {
+                window.status = status;
+        } else {
+                window.status = "To Deliver and Bill";
+        }
+		$("#status").val(window.status);
+		
+        frappe.call({
+                type: "GET",
+                method: "erpnext.www.sales_order.get_sales_order",
+                args: {
+                        city_name: window.city_name,
+                        delivery_date: window.delivery_date,
+                        limit: window.limit,
+                        status: window.status,
+			vehicle_number: window.vehicle_number
+                },
+                callback: function(r) {
+			 var trHTML = "";
+                        var trHTML1 = "";
+
+                       $.each(r.message, function(index, record) {
+                               if( record.address_title == null ) { record.address_title = ''; }
+                                if( record.address_line1 == null ) { record.address_line1 = ''; }
+                                if( record.phone == null ) { record.phone = ''; }
+                                if( record.delivery_date == null ) { record.delivery_date = ''; }
+
+                               if( record.latitude != null ) {
+
+									trHTML += "<tr><td>" + record.address_title + " " +record.address_line1 + "</td><td>" + record.latitude  + "</td><td>" + record.longitude + "</td><td>" + (index+1) + "</td></tr>";
+								}
+                                trHTML1 += "<tr><td class='index'>" + (index+1) + "</td><td>" + record.name + "<input type='hidden' name='order_number' id='order_number'  value='" + record.name + "'></td><td>" + record.customer  + "</td><td>" + record.address_title + " " + record.address_line1 + "  " + record.phone + "</td><td>" + record.delivery_status + "</td></tr>";
+                         });
+			trHTML1 += "</tbody>";
+                        $("#geocode").append(trHTML);
+                                                $("#sales_order_list").append(trHTML1);
+
+                         var newArray = [];
+                                        $("table#geocode tr").each(function(){
+                                                        var tempArray = [];
+                                                        $(this).find('td').each(function(){
+                                                                        tempArray.push($(this).text());
+                                                        });
+                                                        newArray.push(tempArray);
+                                                        });
+
+                                                        var locations = newArray;
+
+                                                     
+                                                var map = new google.maps.Map(document.getElementById('map'), {
+                                                  zoom: 12,
+                                                  center: new google.maps.LatLng(43.6456576,-79.6619449),
+                                                  mapTypeId: google.maps.MapTypeId.ROADMAP
+                                                });
+
+                                                var infowindow = new google.maps.InfoWindow();
+
+                                                        var pinImage = new google.maps.MarkerImage("http://www.googlemapsmarkers.com/v1/009900/");
+
+                                                var marker = new google.maps.Marker({
+													position: new google.maps.LatLng(43.6456576,-79.6619449),                                                    icon: pinImage,
+                                                                        map: map
+                                                  });
+
+                                                         google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                                                        return function() {
+                                                          infowindow.setContent("Sundine Produce");
+                                                          infowindow.open(map, marker);
+                                                        }
+                                                  })(marker, i));
+                                         var i;
+												
+												var latlngbounds = new google.maps.LatLngBounds();
+
+                                                for (i = 0; i < locations.length; i++) 
+												{
+													  marker = new google.maps.Marker({
+															position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+															map: map
+													  });
+
+													  google.maps.event.addListener(marker, 'click', (function(marker, i) {
+
+															  var distance = (google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(43.6456576,-79.6619449), new google.maps.LatLng(locations[i][1], locations[i][2])) / 1000).toFixed(2);
+
+															return function() {
+															  infowindow.setContent(locations[i][0] + " <br /> Distance From Sundine Produce: " + distance + "kms ");
+															  infowindow.open(map, marker);
+															}
+													  })(marker, i));
+													  
+													  latlngbounds.extend(marker.position);
+                                                }
+												var bounds = new google.maps.LatLngBounds();
+												//Center map and adjust Zoom based on the position of all markers.
+												map.setCenter(latlngbounds.getCenter());
+												map.fitBounds(latlngbounds);
+												
+												
+				var fixHelperModified = function(e, tr) {
+    var $originals = tr.children();
+    var $helper = tr.clone();
+    $helper.children().each(function(index) {
+        $(this).width($originals.eq(index).width())
+    });
+    return $helper;
+},
+    updateIndex = function(e, ui) {
+        $('td.index', ui.item.parent()).each(function (i) {
+            $(this).html(i + 1);
+        });
+    };
+
+$("#sales_order_list tbody").sortable({
+    helper: fixHelperModified,
+    stop: updateIndex
+}).disableSelection();	
+			}
+
+	});
+});
+</script>
+
+<div class="row">
+        <div class="hero">
+                <h1 class="text-center"> Sale Order - Routes Map <span style="float:right"><a class='btn btn-default' href="/driver_location">Driver's Current Location</a></span></h1>
+                <h3 class="search-results"></h3>
+                <form id="search_form" action="" method="get">
+                        <table id="sales_order_search" border="0" cellpadding="0" cellspacing="0" width="100%"  class="table table-hover" >
+                                <tr>
+                                    	<th><input name="vehicle_number" type="text" placeholder="Enter Vehicle Number" class="vehicle_number form-control"  /></th>
+					 <th><input name="city_name" type="text" placeholder="Enter City" class="city_name form-control"  /></th>
+                                        <th><input data-fieldtype="Date"  name="delivery_date" type="text" id="datepicker" class="delivery_date form-control"  placeholder="Select Delivery Date" /></th>
+                                        <th>
+                                                <select name="status" class="form-control"  id="status">
+                                                        <option value="To Deliver and Bill">To Deliver and Bill</option>
+                                                        <option value="To Bill">To Bill</option>
+                                                        <option value="To Deliver">To Deliver</option>
+                                                        <option value="Completed">Completed</option>
+                                                        <option value="Cancelled">Cancelled</option>
+                                                        <option value="Closed">Closed</option>
+                                                        <option value="Draft">Draft</option>
+                                                </select>
+                                        </th>
+                                        <th><button type="submit"  class="btn btn-success btn-request">Search</button></th>
+                                </tr>
+                        </table>
+                </form>
+                <table id="geocode" style="display:none" >
+                </table>
+
+        </div>
+</div>
+
+<div class="row">
+        <div class="col-sm-12">
+                <div id="map" style="min-height:400px ; width:100%;"></div>
+        </div>
+        <div class="col-sm-12">
+                <input type='button' class='btn btn-primary' value='Print Order' onClick='print_all()'  id='print' name='print'>
+                                        <input type='button' class='btn btn-primary' value='Print History' onClick='printFunc()'  id='print_history' name='print_histor'>
+	<div id="print_his">
+		<h3 class="search-results"></h3>
+		<table id="sales_order_list" border="0" cellpadding="0" cellspacing="0" width="100%"  class="table table-hover" >
+		<thead>
+                        <tr><th>S no.</th><th>Order Number</th><th>Customer</th><th>Address</th><th>Delivery Status</th></tr>
+		</thead>
+			<tbody>	
+                </table>
+		</div>
+        </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="http://maps.google.com/maps/api/js?key=AIzaSyDxL9JlTGKTrfQXB3F75jJsNL9K8m8GnuQ&libraries=geometry" type="text/javascript"></script>
+
+<script src="http://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script type="text/javascript">
+ $(document).ready(function() {
+    $( "#datepicker" ).datepicker({ dateFormat: "yy-mm-dd" });
+});
+function print_all()
+{
+        var values = [];
+        $("input[name=order_number]").each(function(){
+                 values.push('"' + this.value + '"');
+        });
+        var URI = encodeURI('/api/method/frappe.utils.print_format.download_multi_pdf?doctype=Sales Order&name=[' + values + ']&format=Standard&no_letterhead=0');
+        window.open(URI, '_blank');
+}
+function printFunc() {
+    var divToPrint = document.getElementById('print_his');
+    var htmlToPrint = '' +
+        '<style type="text/css">' +
+        ' th, td {' +
+        'border:1px solid #000;' +
+        'padding:0.5em;' +
+	'@page { size: auto;  margin: 0mm;' +
+        '}' +
+	'</style>';
+    htmlToPrint += divToPrint.outerHTML;
+    newWin = window.open("");
+    newWin.document.write("<h3 align='center'>Sales Order History</h3>");
+    newWin.document.write(htmlToPrint);
+    newWin.print();
+    newWin.close();
+    }
+</script>
+{% endblock %}
+
+												
+
+
+

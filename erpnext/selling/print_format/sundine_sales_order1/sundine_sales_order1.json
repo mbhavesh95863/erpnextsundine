@@ -1,0 +1,23 @@
+{
+ "align_labels_right": 0, 
+ "creation": "2018-05-08 21:32:11.283219", 
+ "custom_format": 1, 
+ "default_print_language": "en", 
+ "disabled": 1, 
+ "doc_type": "Sales Order", 
+ "docstatus": 0, 
+ "doctype": "Print Format", 
+ "font": "Default", 
+ "html": "{%- macro add_header(page_num, max_pages, doc, letter_head, no_letterhead) -%}\n    {% if letter_head and not no_letterhead %}\n    <div class=\"col-md-6 letter-head\">{{ letter_head }}</div>\n    <div class=\"col-md-6\"><table style=\"border:1\"><tr><td>Date</td><td>Invoice#</td></tr><tr><td></td></tr></table></div>\n    {% endif %}\n    \n    {% if max_pages > 1 %}\n    <p class=\"text-right\">{{ _(\"Page #{0} of {1}\").format(page_num, max_pages) }}</p>\n    {% endif %}\n{%- endmacro -%}\n{{ add_header(0,1,doc,letter_head, no_letterhead) }}", 
+ "idx": 0, 
+ "line_breaks": 0, 
+ "modified": "2018-08-01 10:25:42.916036", 
+ "modified_by": "sree@sundineproduce.com", 
+ "module": "Selling", 
+ "name": "Sundine Sales Order1", 
+ "owner": "Administrator", 
+ "print_format_builder": 0, 
+ "print_format_type": "Server", 
+ "show_section_headings": 0, 
+ "standard": "Yes"
+}

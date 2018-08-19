@@ -1,0 +1,173 @@
+#myTable  {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#myTable th,#myTable  td {
+    text-align: left;
+    padding: 1px;
+}
+#myTable tr td{   border: 1px solid #d1d8dd !important; }
+
+#myTable tr td{   border: 1px solid #d1d8dd !important; }
+#myTable input { padding:8px; width:100%; min-width:120px; border:1px solid #d1d8dd; }
+#myTable textarea {  min-width:120px; border:1px solid #d1d8dd; }
+
+#qtyTable  {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#qtyTable th,#qtyTable  td {
+    text-align: left;
+    padding: 8px;
+}
+#qtyTable tr td{   border: 1px solid #d1d8dd !important; }
+
+#qtyTable tr td{   border: 1px solid #d1d8dd !important; }
+#qtyTable input { padding:8px; width:100%; min-width:120px; border:1px solid #d1d8dd; }
+#qtyTable textarea {  min-width:120px; border:1px solid #d1d8dd; }
+
+
+#salesTable  {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#salesTable th,#salesTable  td {
+    text-align: left;
+    padding: 0.5px;
+}
+#salesTable tr td{   border: 1px solid #d1d8dd !important; }
+
+#salesTable tr td{   border: 1px solid #d1d8dd !important; }
+#salesTable input { padding:8px; width:100%; min-width:120px; border:1px solid #d1d8dd; }
+#salesTable textarea {  min-width:120px; border:1px solid #d1d8dd; }
+#rTable  {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#rTable th,#rTable  td {
+    text-align: left;
+    padding: 0.5px;
+}
+#rTable tr td{   border: 1px solid #d1d8dd !important; }
+
+#rTable tr td{   border: 1px solid #d1d8dd !important; }
+#rTable input { padding:8px; width:100%; min-width:120px; border:1px solid #d1d8dd; }
+#rTable textarea {  min-width:120px; border:1px solid #d1d8dd; }
+
+#myTable1  {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#myTable1 th,#myTable1  td {
+    text-align: left;
+    padding: 0.5px;
+}
+#myTable1 tr td{   border: 1px solid #d1d8dd !important; }
+
+#myTable1 tr td{   border: 1px solid #d1d8dd !important; }
+#myTable1 input { padding:8px; width:100%; min-width:120px; border:1px solid #d1d8dd; }
+#myTable1 textarea {  min-width:120px; border:1px solid #d1d8dd; }
+
+#myTable2  {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#myTable2 th,#myTable2  td {
+    text-align: left;
+    padding: 0.5px;
+}
+#myTable2 tr td{   border: 1px solid #d1d8dd !important; }
+
+#myTable2 tr td{   border: 1px solid #d1d8dd !important; }
+#myTable2 input { padding:8px; width:100%; min-width:120px; border:1px solid #d1d8dd; }
+#myTable2 textarea {  min-width:120px; border:1px solid #d1d8dd; }
+
+#popTable  {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#popTable th,#popTable  td {
+    text-align: left;
+    padding: 8px;
+}
+#popTable tr td{   border: 1px solid #d1d8dd !important; }
+
+tr:nth-child(even){background-color: #f2f2f2}
+.purchase_pallets { width:100%;   min-width:50px !important;}
+#iqty { margin-right:1%; width:45% !important;   min-width:50px !important;}
+.weight { width:100%; min-width:40px !important; }
+#iprice { margin-left:1%; width:45% !important;   min-width:50px !important;}
+.gross_weight { display:none; margin-left:1%; width:40% !important;   min-width:50px !important;}
+#qtotal { margin:0 0 1% 0; width:45% !important; float:left;  }
+#stotal { margin:1% 0 0 0; width:45% !important; float:left;   }
+.idesc { width: 100% !important;  }
+.gwgtitotal {display:none; }
+#myTable .idesc, #salesTable .idesc { min-width:200px !important;  }
+.text-span { width:40%; float:left;}
+.autocomplete {
+  /*the container must be positioned relative:*/
+  position: relative;
+  display: inline-block;
+}
+input {
+  border: 1px solid transparent;
+//  background-color: #f1f1f1;
+  padding: 8px;
+  font-size: 16px;
+}
+input[type=text] {
+ // background-color: #f1f1f1;
+  width: 100%;
+}
+input[type=submit] {
+  background-color: DodgerBlue;
+  color: #fff;
+  cursor: pointer;
+}
+.autocomplete-items {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-top: none;
+  z-index: 99;
+  /*position the autocomplete items to be the same width as the container:*/
+  top: 100%;
+  left: 0;
+  right: 0;
+}
+.autocomplete-items div {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #fff; 
+  border-bottom: 1px solid #d4d4d4; 
+}
+.autocomplete-items div:hover {
+  /*when hovering an item:*/
+  background-color: #e9e9e9; 
+}
+.autocomplete-active {
+  /*when navigating through the items using the arrow keys:*/
+  background-color: DodgerBlue !important; 
+  color: #ffffff; 
+}

@@ -21,9 +21,11 @@ web_include_js = "assets/js/erpnext-web.min.js"
 web_include_css = "assets/erpnext/css/website.css"
 
 doctype_js = {
-	"Communication": "public/js/communication.js",
+	"Communication": ["public/js/communication.js"],
+	"Master Sales Order": ["public/js/salesTables.js"],
+	"Master Purchase Order": ["public/js/myTables.js"],
+	"Master PO Landing Cost": ["public/js/myTables.js"],
 }
-
 # setup wizard
 setup_wizard_requires = "assets/erpnext/js/setup_wizard.js"
 setup_wizard_stages = "erpnext.setup.setup_wizard.setup_wizard.get_setup_stages"
@@ -42,6 +44,9 @@ on_session_creation = "erpnext.shopping_cart.utils.set_cart_count"
 on_logout = "erpnext.shopping_cart.utils.clear_cart_count"
 
 treeviews = ['Account', 'Cost Center', 'Warehouse', 'Item Group', 'Customer Group', 'Sales Person', 'Territory', 'Assessment Group']
+fixtures = [{"doctype": "DocType",
+            "filters": { "name" : ["in",["Sales Order","Sales Order Item","Purchase Receipt","Purchase Receipt Item","Purchase Order","Purchase Order Item","Sales Invoice","Sales Invoice Item","Purchase Invoice","Purchase Invoice Item","Delivery Note","Delivery Note Item","Master Purchase Order","Master Purchase Order Item","Master Sales Receiving Mode","Master Sales Order","Master Sales Order Item","Item","Address","User","Journal Entry","Journal Entry Account"]] }
+           }]
 
 # website
 update_website_context = "erpnext.shopping_cart.utils.update_website_context"
@@ -212,7 +217,9 @@ doc_events = {
 scheduler_events = {
 	"hourly": [
 		"erpnext.accounts.doctype.subscription.subscription.make_subscription_entry",
-		'erpnext.hr.doctype.daily_work_summary_settings.daily_work_summary_settings.trigger_emails'
+		'erpnext.hr.doctype.daily_work_summary_settings.daily_work_summary_settings.trigger_emails',
+		"frappe.utils.backups.backup",
+		"erpnext.backup_api.transfer_files"
 	],
 	"daily": [
 		"erpnext.stock.reorder_item.reorder_item",

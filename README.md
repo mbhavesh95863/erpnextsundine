@@ -84,3 +84,4 @@ When in doubt about your use of the ERPNext name or logo, please contact Frappé
 (inspired by WordPress)
 # erpnextsundine
 # erpnextsundine1
+# erpnextsun

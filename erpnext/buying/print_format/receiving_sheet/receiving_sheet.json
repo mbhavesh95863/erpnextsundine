@@ -1,0 +1,23 @@
+{
+ "align_labels_right": 0, 
+ "creation": "2018-05-03 11:17:29.633398", 
+ "custom_format": 1, 
+ "default_print_language": "en", 
+ "disabled": 0, 
+ "doc_type": "Receiving Sheet", 
+ "docstatus": 0, 
+ "doctype": "Print Format", 
+ "font": "Default", 
+ "html": "<h2 class=\"text-center\">Sundine Produce Inc.</h2>\n<div class=\"row\">\n\t<div class=\"col-md-6 text-left\">{{ doc.order_type}}</div>\n\t<div class=\"col-md-6 text-right\">{{ doc.get_formatted(\"receiving_date\") }}</div>\n</div>\n<table class=\"table table-bordered\">\n\t<tbody>\n\t\t<tr>\n\t\t\t<th>Boxes</th>\n\t\t\t<th>Product</th>\n\t\t\t<th class=\"text-right\">Per box</th>\n\t\t\t<th class=\"text-right\">Net lb</th>\n\t\t\t<th class=\"text-right\">Gross lb</th>\n\t\t\t<th class=\"text-right\">Net kg</th>\n\t\t\t<th class=\"text-right\">Gross kg</th>\n\t\t\t<th>Comments</th>\n\t\t</tr>\n\t\t{% set total_boxes = namespace(b=0) %}\n\t\t{% set total_total_boxes = namespace(i=0) %}\n\t\t{% set total_netlb = namespace(j=0) %}\n\t\t{% set total_grosslb = namespace(k=0) %}\n\t\t{% set total_netkg = namespace(l=0) %}\n\t\t{% set total_grosskg = namespace(m=0) %}\n\t\t{% set imp_qnty = frappe.get_all(\"Master Purchase Order Item\", {'parent':doc.master_purchase_order}, [\"row_number\",\"item_name\", \"item_code\", \"received_qty\", \"weight_per_unit\", \"gross_weight\"])  %}\n\t\t{% for row in imp_qnty|groupby('row_number') %}\n\t\t\t\n\t\t\t{% for dt in row[1] %}\n\t\t\t\t{% set total_boxes.b = total_boxes.b+dt.received_qty|int %}\n\t\t\t{% endfor %}\n\t\t\t{% set nw = namespace(c=row[1][0].weight_per_unit|int)%}\n\t\t\t{% set gw = namespace(d=row[1][0].gross_weight|int)%}\n\t\t\t<tr>\n\t\t\t\t<td style=\"width: 10%;\">{{ total_boxes.b }}</td>\n\t\t\t\t<td style=\"width: 20%;\">{{ row[1][0].item_name }}</td>\n\t\t\t\t<td style=\"width: 10%; text-align: right; \">{{ row[1][0].weight_per_unit }}</td>\n\t\t\t\t<td style=\"width: 10%; text-align: right;\">{{ nw.c*total_boxes.b|int }}</td>\n\t\t\t\t<td style=\"width: 13%; text-align: right;\">{{ gw.d*total_boxes.b|int }}</td>\n\t\t\t\t<td style=\"width: 10%; text-align: right;\">\n\t\t\t\t\t{% if nw.c > 0 %}\n\t\t\t\t\t\t{% set  netkg = namespace(e = nw.c*total_boxes.b|int) %}\n\t\t\t\t\t\t{% set  netkg1 = namespace(g = netkg.e/2.2) %}\n\t\t\t\t\t\t{{  netkg1.g|round|int  }}\n\t\t\t\t\t\t{% set total_netkg.l = total_netkg.l + netkg1.g|round|int %}\n\t\t\t\t\t{% else %}\n\t\t\t\t\t\t0\n\t\t\t\t\t\t{% set total_grosskg.m = total_grosskg.m %}\n\t\t\t\t\t{% endif %}\n\t\t\t\t</td>\n\t\t\t\t<td style=\"width: 13%; text-align: right;\">\n\t\t\t\t\t{% if gw.d > 0 %}\n\t\t\t\t\t\t{% set  grosskg = namespace(f = gw.d*total_boxes.b|int) %}\n\t\t\t\t\t\t{% set  grosskg1 = namespace(h =  grosskg.f/2.2) %}\n\t\t\t\t\t\t{{ grosskg1.h|round|int }}\n\t\t\t\t\t\t{% set total_grosskg.m = total_grosskg.m + grosskg1.h|round|int  %}\n\t\t\t\t\t{% else %}\n\t\t\t\t\t\t0\n\t\t\t\t\t\t{% set total_grosskg.m = total_grosskg.m  %}\n\t\t\t\t\t{% endif %}\n\t\t\t\t</td>\n\t\t\t\t<td style=\"width: 14%;\"></td>\n\t\t\t</tr>\n\t\t\t{% set total_netlb.j = total_netlb.j + nw.c*total_boxes.b %}\n\t\t\t{% set total_grosslb.k = total_grosslb.k + gw.d*total_boxes.b %}\n\t\t\t{% set total_total_boxes.i = total_total_boxes.i + total_boxes.b %}\n\t\t\t{% set total_boxes.b = 0 %}\n\t\t{%- endfor -%}\n\t\t<tr>\n\t\t\t<th>{{ total_total_boxes.i|int}}</th>\n\t\t\t<th></th>\n\t\t\t<th class=\"text-right\"></th>\n\t\t\t<th class=\"text-right\">{{ total_netlb.j|int}}</th>\n\t\t\t<th class=\"text-right\">{{ total_grosslb.k|int}}</th>\n\t\t\t<th class=\"text-right\">{{ total_netkg.l|round|int}}</th>\n\t\t\t<th class=\"text-right\">{{ total_grosskg.m|round|int}}</th>\n\t\t\t<th></th>\n\t\t</tr>\n\t</tbody>\n</table>", 
+ "idx": 0, 
+ "line_breaks": 0, 
+ "modified": "2018-05-10 06:14:33.958720", 
+ "modified_by": "Administrator", 
+ "module": "Buying", 
+ "name": "Receiving Sheet", 
+ "owner": "Administrator", 
+ "print_format_builder": 0, 
+ "print_format_type": "Server", 
+ "show_section_headings": 0, 
+ "standard": "Yes"
+}

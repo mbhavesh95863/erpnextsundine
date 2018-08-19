@@ -103,15 +103,82 @@ erpnext.buying.BuyingController = erpnext.TransactionController.extend({
 	buying_price_list: function() {
 		this.apply_price_list();
 	},
+	credits:function(){
+		this.calculate_taxes_and_totals();
+
+	},
 
 	price_list_rate: function(doc, cdt, cdn) {
 		var item = frappe.get_doc(cdt, cdn);
 		frappe.model.round_floats_in(item, ["price_list_rate", "discount_percentage"]);
-
 		item.rate = flt(item.price_list_rate * (1 - item.discount_percentage / 100.0),
 			precision("rate", item));
+		if(doc.doctype=="Purchase Order")
+		{
+				frappe.call({
+				method: 'frappe.client.get_value',
+				args: {
+					doctype: 'Item',
+					filters: { item_code:item.item_code
+					},
+				   fieldname:['purchase_uom','gross_weight']
+				},
+				callback: function(res) {
+					
+					
+					if(res.message.purchase_uom === 'Pallet')
+					{
+						frappe.model.set_value(cdt, cdn, "box_unit_rate",item.rate/item.boxes_pallet_for_purchase);
+						frm.refresh_field('box_unit_rate');
+
+					}
+					else 
+					{
+						frappe.model.set_value(cdt, cdn, "box_unit_rate",item.rate);
+						frm.refresh_field('box_unit_rate');
+					}
+					frm.refresh_field('items');
+				}
+			})
+		}
 
 		this.calculate_taxes_and_totals();
+	},
+	box_unit_rate:function(doc,cdt,cdn){
+		var item = frappe.get_doc(cdt, cdn);
+	//	var rate=flt((item.box_unit_rate )* (item.boxes_pallet_for_purchase),
+	//	precision("rate", item));
+	//	frappe.model.set_value(cdt,cdn,"rate",rate)
+	//	console.log(rate);
+	//	this.calculate_taxes_and_totals();
+		frappe.model.set_value(cdt, cdn, "amount",parseInt(item.box_unit_rate)*parseInt(item.box));
+		
+
+	},
+	box_rate:function(doc,cdt,cdn){
+		var item = frappe.get_doc(cdt, cdn);
+	//	var rate=flt((item.box_unit_rate )* (item.boxes_pallet_for_purchase),
+	//	precision("rate", item));
+	//	frappe.model.set_value(cdt,cdn,"rate",rate)
+	//	console.log(rate);
+	//	this.calculate_taxes_and_totals();
+		if(parseInt(item.credits)>0)
+		{
+		var final_qty=parseInt(item.received_box)-parseInt(item.credits)
+		var amount=parseInt(item.box_rate)*final_qty
+		console.log(final_qty);
+		console.log(amount);
+		frappe.model.set_value(cdt, cdn, "amount",amount);
+		frappe.model.round_floats_in(item, ["amount"]);
+		}
+		else{
+		frappe.model.set_value(cdt, cdn, "amount",parseInt(item.box_rate)*parseInt(item.received_box));
+		console.log("else")
+		}
+	
+		this.calculate_taxes_and_totals();
+		
+
 	},
 
 	discount_percentage: function(doc, cdt, cdn) {
@@ -120,7 +187,7 @@ erpnext.buying.BuyingController = erpnext.TransactionController.extend({
 
 	qty: function(doc, cdt, cdn) {
 		var item = frappe.get_doc(cdt, cdn);
-		if ((doc.doctype == "Purchase Receipt") || (doc.doctype == "Purchase Invoice" && (doc.update_stock || doc.is_return))) {
+		if ((doc.doctype == "Purchase Invoice" && (doc.update_stock || doc.is_return))) {
 			frappe.model.round_floats_in(item, ["qty", "received_qty"]);
 
 			if(!doc.is_return && this.validate_negative_quantity(cdt, cdn, item, ["qty", "received_qty"])){ return }
@@ -150,8 +217,13 @@ erpnext.buying.BuyingController = erpnext.TransactionController.extend({
 
 		if(!doc.is_return && this.validate_negative_quantity(cdt, cdn, item, ["received_qty", "rejected_qty"])){ return }
 
+		if(!doc.doctype=="Purchase Receipt")
+		{
 		item.qty = flt(item.received_qty - item.rejected_qty, precision("qty", item));
 		this.qty(doc, cdt, cdn);
+		}
+
+
 	},
 
 	validate_negative_quantity: function(cdt, cdn, item, fieldnames){

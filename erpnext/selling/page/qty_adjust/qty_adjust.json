@@ -1,0 +1,27 @@
+{
+ "content": null, 
+ "creation": "2018-04-27 09:34:37.158750", 
+ "docstatus": 0, 
+ "doctype": "Page", 
+ "icon": "octicon octicon-beaker", 
+ "idx": 0, 
+ "modified": "2018-06-28 11:39:10.602183", 
+ "modified_by": "Administrator", 
+ "module": "Selling", 
+ "name": "qty-adjust", 
+ "owner": "Administrator", 
+ "page_name": "Qty Adjust", 
+ "roles": [
+  {
+   "role": "System Manager"
+  }, 
+  {
+   "role": "Sales Manager"
+  }
+ ], 
+ "script": null, 
+ "standard": "Yes", 
+ "style": null, 
+ "system_page": 0, 
+ "title": "Qty Adjust"
+}

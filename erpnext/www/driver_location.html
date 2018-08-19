@@ -1,0 +1,184 @@
+{% extends "templates/web.html" %}
+{% block style %}
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+{% endblock %}
+{% block page_content %}
+<script>
+frappe.ready(function() {
+        var date1 = frappe.utils.get_url_arg("date1");
+		window.date1 = date1;
+        var user = frappe.utils.get_url_arg("user");
+		window.user = user;
+		var mthd = "erpnext.www.driver_location.getUserLocation";
+		if(user && user!='') {
+			mthd = "erpnext.www.driver_location.getUserLocation1";
+		}
+//	alert(window.date1);
+	$(".delivery_date").val(date1);
+	$(".user").val(user);        
+        frappe.call({
+                type: "GET",
+                method: mthd,
+                args: {
+                        date1: window.date1,
+                        user: window.user,
+                },
+                callback: function(r) {
+                       var trHTML = "";
+                        var trHTML1 = "";
+			if(r != "False") 
+			{		
+        	                $.each(r.message, function(index, record) {
+
+                	               if( record.latitude != null ) 
+							   {
+									trHTML += "<tr><td>" + record.user + "</td><td>" + record.latitude  + "</td><td>" + record.longitude + "</td><td>" + (index+1) + "</td><td>" + record.date + " " + record.time + "</td></tr>";
+                                	}
+                                //	trHTML1 += "<tr><td class='index'>" + (index+1) + "</td><td>" + record.user + "</td></tr>";
+                        	 });
+			}
+                        trHTML1 += "</tbody>";
+                        $("#geocode").append(trHTML);
+                         $("#sales_order_list").append(trHTML1);
+
+                         var newArray = [];
+                                        $("table#geocode tr").each(function(){
+                                                        var tempArray = [];
+                                                        $(this).find('td').each(function(){
+                                                                        tempArray.push($(this).text());
+                                                        });
+                                                        newArray.push(tempArray);
+                                                        });
+
+                                                var locations = newArray;
+												var map = new google.maps.Map(document.getElementById('map'), {
+                                                  zoom: 10,
+                                                  center: new google.maps.LatLng(43.6456576,-79.6619449),
+                                                  mapTypeId: google.maps.MapTypeId.ROADMAP
+                                                });
+
+                                                var infowindow = new google.maps.InfoWindow();
+
+                                                var pinImage = new google.maps.MarkerImage("http://www.googlemapsmarkers.com/v1/009900/");
+
+                                                var marker = new google.maps.Marker({
+                                                         position: new google.maps.LatLng(43.6456576,-79.6619449),icon: pinImage,
+                                                         map: map
+                                                  });
+
+                                                         google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                                                        return function() {
+                                                          infowindow.setContent("Center Location");
+                                                          infowindow.open(map, marker);
+                                                        }
+                                                  })(marker, i));
+											
+											   var startImage = new google.maps.MarkerImage("http://www.googlemapsmarkers.com/v1/e0e00f/");
+											   var endImage = new google.maps.MarkerImage("http://www.googlemapsmarkers.com/v1/002dd1/");
+											   var defaultImage = new google.maps.MarkerImage("http://sundinepro.com:3500/files/dot.png");
+
+                                                for (var i = 0; i < locations.length; i++) 
+												{
+													if(i == 0) 
+													{ 
+														marker = new google.maps.Marker({
+															position: new google.maps.LatLng(locations[i][1], locations[i][2]),icon: startImage,
+															map: map
+													  });
+													} 
+													else if(i == (locations.length - 1)) 
+													{ 
+														marker = new google.maps.Marker({
+															position: new google.maps.LatLng(locations[i][1], locations[i][2]),icon: endImage,
+															map: map
+													  }); 
+													}
+													else 
+													{ 
+														marker = new google.maps.Marker({
+															position: new google.maps.LatLng(locations[i][1], locations[i][2]), icon: defaultImage,
+															map: map
+													  }); 
+													}
+													
+													
+													  google.maps.event.addListener(marker, 'click', (function(marker, i) {
+
+															return function() {
+															  infowindow.setContent(locations[i][4]+"<br />"+locations[i][0]);
+															  infowindow.open(map, marker);
+															}
+													  })(marker, i));
+                                                }
+            var fixHelperModified = function(e, tr) {
+				var $originals = tr.children();
+				var $helper = tr.clone();
+				$helper.children().each(function(index) {
+					$(this).width($originals.eq(index).width())
+				});
+				return $helper;
+			},
+				updateIndex = function(e, ui) {
+					$('td.index', ui.item.parent()).each(function (i) {
+						$(this).html(i + 1);
+					});
+			};
+
+			$("#sales_order_list tbody").sortable({
+				helper: fixHelperModified,
+				stop: updateIndex
+			}).disableSelection();
+                       }
+
+        });
+});
+</script>
+
+<div class="row">
+        <div class="hero">
+                <h1 class="text-center"> Driver Location  <span style="float:right"><a class='btn btn-default' href="/sales_order">Sales Order</a></span></h1>
+                <h3 class="search-results"></h3>
+                <form id="search_form" action="" method="get">
+                     <table id="sales_order_search" border="0" cellpadding="0" cellspacing="0" width="100%"  class="table table-hover" >
+                                <tr>
+					<th><input data-fieldtype="Date"  name="date1" type="text" id="datepicker" class="delivery_date form-control"  placeholder="Select Delivery Date" /></th>
+					<th><input data-fieldtype="user"  name="user" type="text" id="user" class="user form-control"  placeholder="Enter Driver Name" /></th>
+					<th><button type="submit"  class="btn btn-success btn-request">Search</button></th>
+                                </tr>
+                        </table>
+                </form>
+                <table id="geocode" style="display:none" >
+                </table>
+
+        </div>
+</div>
+
+<div class="row">
+        <div class="col-sm-12">
+                <div id="map" style="min-height:400px ; width:100%;"></div>
+        </div>
+        <div class="col-sm-12">
+			<div id="print_his">
+				<h3 class="search-results"></h3>
+                <table id="sales_order_list" border="0" cellpadding="0" cellspacing="0" width="100%"  class="table table-hover" >
+                <thead>
+                   <!---     <tr><th>S no.</th><th>Driver Name</th></tr> -->
+				</thead>
+				<tbody>
+                </table>
+			</div>
+        </div>
+</div>
+{% endblock %}
+{% block script %}
+<script src="http://maps.google.com/maps/api/js?key=AIzaSyDxL9JlTGKTrfQXB3F75jJsNL9K8m8GnuQ&libraries=geometry" type="text/javascript"></script>
+
+<script src="http://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script type="text/javascript">
+ $(document).ready(function() {
+    $( "#datepicker" ).datepicker({ dateFormat: "yy-mm-dd" });
+});
+</script>
+{% endblock %}
+                                                                                   
+

@@ -56,6 +56,18 @@ class ReceivablePayableReport(object):
 			columns += [_("Bill No") + "::80", _("Bill Date") + ":Date:80"]
 
 		credit_or_debit_note = "Credit Note" if args.get("party_type") == "Customer" else "Debit Note"
+		columns.append({
+				"label":"Invoiced Amount USD",
+				"fieldtype": "Currency",
+				"options": "currency",
+				"width": 150
+		})
+		columns.append({
+				"label":"Paid Amount USD",
+				"fieldtype": "Currency",
+				"options": "currency",
+				"width": 120
+		})
 
 		for label in ("Invoiced Amount", "Paid Amount", credit_or_debit_note, "Outstanding Amount"):
 			columns.append({
@@ -162,9 +174,11 @@ class ReceivablePayableReport(object):
 						]
 
 					# invoiced and paid amounts
+					invoice_amount_usd=getInvoiceAmountUSD(gle.voucher_no,gle.voucher_type)
+					paid_amount_usd=getPaidAmountUSD(gle.voucher_no,gle.voucher_type)
 					invoiced_amount = gle.get(dr_or_cr) if (gle.get(dr_or_cr) > 0) else 0
 					paid_amt = invoiced_amount - outstanding_amount - credit_note_amount
-					row += [invoiced_amount, paid_amt, credit_note_amount, outstanding_amount]
+					row += [invoice_amount_usd,paid_amount_usd,invoiced_amount, paid_amt, credit_note_amount, outstanding_amount]
 
 					# ageing data
 					entry_date = due_date if self.filters.ageing_based_on == "Due Date" else gle.posting_date
@@ -204,6 +218,8 @@ class ReceivablePayableReport(object):
 					data.append(row)
 
 		return data
+
+
 
 	def get_entries_after(self, report_date, party_type):
 		# returns a distinct list
@@ -458,3 +474,28 @@ def get_dn_details(party_type):
 				dn_details.setdefault(si.parent, si.dn)
 
 	return dn_details
+
+
+def getInvoiceAmountUSD(v_no,v_type):
+	if v_type=="Sales Invoice":
+		amount=frappe.db.sql("""select grand_total from `tabSales Invoice` where name=%s""",v_no)
+		if not len(amount)==0:
+			return amount[0][0]
+		else:
+			return str()
+
+	if v_type=="Purchase Invoice":
+		amount=frappe.db.sql("""select grand_total from `tabPurchase Invoice` where name=%s""",v_no)
+		if not len(amount)==0:
+			return amount[0][0]
+		else:
+			return str()
+	
+
+def getPaidAmountUSD(v_no,v_type):
+	if v_type=="Payment Entry":
+		amount=frappe.db.sql("""select paid_amount from `tabPayment Entry` where name=%s""",v_no)
+		if not len(amount)==0:
+			return amount[0][0]
+		else:
+			return str()

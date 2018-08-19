@@ -270,11 +270,12 @@ class PurchaseInvoice(BuyingController):
 		])
 
 	def validate_purchase_receipt_if_update_stock(self):
-		if self.update_stock:
-			for item in self.get("items"):
-				if item.purchase_receipt:
-					frappe.throw(_("Stock cannot be updated against Purchase Receipt {0}")
-						.format(item.purchase_receipt))
+		pass
+		#if self.update_stock:
+		#	for item in self.get("items"):
+		#		if item.purchase_receipt:
+		#			frappe.throw(_("Stock cannot be updated against Purchase Receipt {0}")
+		#				.format(item.purchase_receipt))
 
 	def on_submit(self):
 		super(PurchaseInvoice, self).on_submit()
@@ -700,7 +701,19 @@ class PurchaseInvoice(BuyingController):
 @frappe.whitelist()
 def make_debit_note(source_name, target_doc=None):
 	from erpnext.controllers.sales_and_purchase_return import make_return_doc
-	return make_return_doc("Purchase Invoice", source_name, target_doc)
+	doc=make_return_doc("Purchase Invoice", source_name, target_doc)
+	#doc=make_return_doc("Purchase Receipt", source_name, target_doc)
+	#frappe.msgprint(json.dumps(doc))]
+	response=[]
+	for row in doc.items:
+		if row.returns>0:
+			response.append(row)
+	doc.items=[]
+	if len(response)>0:
+		doc1=doc.insert()
+		doc1.items=response
+		doc1.update_stock=1
+		doc1.submit()
 
 @frappe.whitelist()
 def get_fixed_asset_account(asset, account=None):

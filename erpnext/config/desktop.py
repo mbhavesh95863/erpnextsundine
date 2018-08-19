@@ -135,6 +135,14 @@ def get_data():
 			"label": _("POS")
 		},
 		{
+			"module_name": "Master",
+			"color": "#589494",
+			"icon": "octicon octicon-credit-card",
+			"type": "page",
+			"link": "gmail.com",
+			"label": _("Master PO")
+		},
+		{
 			"module_name": "Leaderboard",
 			"color": "#589494",
 			"icon": "octicon octicon-graph",
@@ -360,7 +368,7 @@ def get_data():
 		{
 			"module_name": "Land Unit",
 			"_doctype": "Land Unit",
-			"label": _("Land Unit"),
+			"label": _("VS Unit"),
 			"color": "#8BC34A",
 			"icon": "fa fa-map",
 			"type": "list",
@@ -464,6 +472,16 @@ def get_data():
 			"type": "list",
 			"link": "List/Volunteer",
 			"label": _("Volunteer"),
+			"hidden": 1
+		},
+		{
+			"module_name": "Selling",
+			"color": "#7E587E",
+			"icon": "fa fa-cube",
+			"_doctype": "Volunteer",
+			"type": "list",
+			"link": "List/Volunteer",
+			"label": _("Dolunteer"),
 			"hidden": 1
 		},
 		{
